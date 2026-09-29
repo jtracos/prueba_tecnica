@@ -1,0 +1,10 @@
+-- Trino --
+User: root
+Password: No aplica
+
+
+-- Airflow --
+En el docker-compose podrás encontrar el usuario y contraseña.
+
+set the right airflow uid
+echo -e "AIRFLOW_UID=$(id -u)" > .env
