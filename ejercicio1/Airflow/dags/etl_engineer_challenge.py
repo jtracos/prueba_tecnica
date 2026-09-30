@@ -69,6 +69,13 @@ def process_file(df:pl.DataFrame):
                 pl.lit(None).alias(col_name)
             ).count()
 
+    def agg_by_status(status:str):
+        return pl.when(
+            pl.col("status") == status
+            ).then(
+                pl.col("amount")
+            ).sum().alias(f"{status}_amount")
+
     #clean column names
     df = df.rename({name:name.strip() for name in df.columns})
     #count null values by column
@@ -122,8 +129,16 @@ def process_file(df:pl.DataFrame):
                 "empty string on date columns: \n %s", str(nulls_by_col_final.head())
             )
 
-    logging.info("final types: %s", str(final_df.dtypes))
-    return final_df
+    agg_df = final_df.group_by(pl.col("name"),pl.col("created_at")).agg(
+        agg_by_status("paid"),
+        agg_by_status("pending_payment"),
+        agg_by_status("pre_authorized"),
+        agg_by_status("refunded"),
+        agg_by_status("charged_back")
+    )
+
+    logging.info("final types: %s", str(agg_df.dtypes))
+    return agg_df
 
 
 def process():
