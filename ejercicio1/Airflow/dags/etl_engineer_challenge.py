@@ -98,6 +98,8 @@ def process_file(df:pl.DataFrame):
         pl.selectors.ends_with("_at").str.strip_chars()
         )
 
+    logging.info("source types: %s", str(pre_clean_dates.dtypes))
+
     count_empty_string_dates = pre_clean_dates.select(
     valide_empty_str("created_at"),
     valide_empty_str("paid_at"),
@@ -111,14 +113,16 @@ def process_file(df:pl.DataFrame):
     clean_empty_str("created_at"),
     clean_empty_str("paid_at")
     ).with_columns(
-        parse_date_column("created_at").alias("created_at_cleaned"),
-            parse_date_column("paid_at").alias("paid_at_cleaned")
+        parse_date_column("created_at").alias("created_at"),
+        parse_date_column("paid_at").alias("paid_at")
     )
     nulls_by_col_final = count_null_values(final_df)
 
     logging.info(
                 "empty string on date columns: \n %s", str(nulls_by_col_final.head())
             )
+
+    logging.info("final types: %s", str(final_df.dtypes))
     return final_df
 
 
