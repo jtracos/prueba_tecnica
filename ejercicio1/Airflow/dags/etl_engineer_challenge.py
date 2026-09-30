@@ -77,12 +77,22 @@ def process_file(df:pl.DataFrame):
         "null summary on source: \n %s", str(nulls_by_col.head())
     )
 
-    dlq = df.filter(pl.col("id").is_null()).select(pl.lit("id value is null").alias("error"))
+    dlq = df.filter(
+        pl.col("id").is_null() | pl.col("company_id").is_null()
+        ).with_columns(
+            pl.when(
+                pl.coalesce(pl.col("id"),pl.col("company_id")).is_null()
+            ).then(pl.lit("id and company_id are null")).when(
+                pl.col("id").is_null()
+            ).then(pl.lit("id is null")).when(
+                pl.col("company_id").is_null()
+            ).then(pl.lit("company_id is null")).alias("error")
+        )
     if len(dlq) >0:
         logging.info("se han encontrado registros con id nulos. Se guardaran el dlq para su revision")
         #TODO: save to dlq
-
-    df = df.filter(pl.col("id").is_not_null())
+    # se eliminan registros con id's nulos
+    df = df.filter(pl.col("id").is_not_null() & pl.col("company_id").is_not_null())
 
     pre_clean_dates = df.with_columns(
         pl.selectors.ends_with("_at").str.strip_chars()
@@ -128,7 +138,6 @@ def process():
         bucket_name = sink_bucket,
         replace = True)
 
-    logging.info("read file %s", str(df.head(1)))
 
 with DAG(
     dag_id=dag_name,
