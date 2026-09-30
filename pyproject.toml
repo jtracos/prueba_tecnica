@@ -1,0 +1,21 @@
+[project]
+name = "prueba-tecnica"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "jtracos", email = "slirahux@protonmail.ch" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "apache-airflow[amazon]==3.2.0",
+    "minio>=7.2.20",
+    "polars>=1.44.2",
+]
+
+[project.scripts]
+prueba-tecnica = "prueba_tecnica:main"
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
