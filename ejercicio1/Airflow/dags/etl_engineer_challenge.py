@@ -84,6 +84,8 @@ def process_file(df:pl.DataFrame):
         "null summary on source: \n %s", str(nulls_by_col.head())
     )
 
+    logging.info("valores unicos de status:\n %s", str(df.select(pl.col("status").unique())))
+
     dlq = df.filter(
         pl.col("id").is_null() | pl.col("company_id").is_null()
         ).with_columns(
