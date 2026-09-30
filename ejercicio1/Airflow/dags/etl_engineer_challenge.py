@@ -66,7 +66,7 @@ def process_file(df:pl.DataFrame):
             ).then(
                 pl.col(col_name)
             ).otherwise(
-                pl.lit(None).alias(col_name)
+                pl.lit(None)
             ).count()
 
     def agg_by_status(status:str):
@@ -120,14 +120,16 @@ def process_file(df:pl.DataFrame):
     clean_empty_str("created_at"),
     clean_empty_str("paid_at")
     ).with_columns(
-        parse_date_column("created_at").alias("created_at"),
-        parse_date_column("paid_at").alias("paid_at")
+        parse_date_column("created_at"),
+        parse_date_column("paid_at")
     )
     nulls_by_col_final = count_null_values(final_df)
 
     logging.info(
                 "empty string on date columns: \n %s", str(nulls_by_col_final.head())
             )
+
+    logging.info("final types: %s", str(final_df.dtypes))
 
     agg_df = final_df.group_by(pl.col("name"),pl.col("created_at")).agg(
         agg_by_status("paid"),
@@ -137,7 +139,6 @@ def process_file(df:pl.DataFrame):
         agg_by_status("charged_back")
     )
 
-    logging.info("final types: %s", str(agg_df.dtypes))
     return agg_df
 
 
