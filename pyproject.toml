@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "apache-airflow-providers-trino>=6.7.0",
     "apache-airflow[amazon]==3.2.0",
     "minio>=7.2.20",
     "polars>=1.44.2",
