@@ -50,4 +50,8 @@
         <name>fs.s3a.impl</name>
         <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
     </property>
+    <property>
+        <name>metastore.schema.verification</name>
+        <value>true</value>
+    </property>
 </configuration>
