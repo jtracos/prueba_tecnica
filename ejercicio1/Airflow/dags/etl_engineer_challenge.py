@@ -1,10 +1,9 @@
 import logging
 import datetime
 import polars as pl
-from airflow import DAG
 
-from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.sdk import dag, task
 
 dag_name = __file__.removesuffix(".py").split("/")[-1]
 
@@ -144,30 +143,30 @@ def process_file(df:pl.DataFrame):
     return agg_df
 
 
-def process():
-    import io
+@dag(
+        dag_id=dag_name,
+        schedule= None,
+        start_date=datetime.datetime(year = 2026, month=1, day=1)
+)
+def dag_taskflow():
 
-    bytes_ = io.BytesIO()
-    minio = S3Hook(aws_conn_id="minio_conn")
-    content = minio.get_key(key= object_name, bucket_name = bucket)
-    response = content.get()["Body"]
-    df = pl.read_csv(response.read(), has_header=True, separator=",")
-    df_final = process_file(df)
-    df_final.write_parquet(bytes_)
-    minio.load_bytes(
-        bytes_data = bytes_.getvalue(),
-        key = sink_object,
-        bucket_name = sink_bucket,
-        replace = True)
+    @task()
+    def process():
+        import io
 
+        bytes_ = io.BytesIO()
+        minio = S3Hook(aws_conn_id="minio_conn")
+        content = minio.get_key(key= object_name, bucket_name = bucket)
+        response = content.get()["Body"]
+        df = pl.read_csv(response.read(), has_header=True, separator=",")
+        df_final = process_file(df)
+        df_final.write_parquet(bytes_)
+        minio.load_bytes(
+            bytes_data = bytes_.getvalue(),
+            key = sink_object,
+            bucket_name = sink_bucket,
+            replace = True)
 
-with DAG(
-    dag_id=dag_name,
-    schedule= None,
-    start_date=datetime.datetime(year = 2026, month=1, day=1)
-    ) as dag:
+    process_task = process()
 
-    transform = PythonOperator(
-        task_id = "process",
-        python_callable= process
-    )
+dag_taskflow()
