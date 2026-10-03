@@ -3,6 +3,7 @@ import datetime
 import polars as pl
 
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.trino.hooks.trino import TrinoHook
 from airflow.sdk import dag, task
 
 dag_name = __file__.removesuffix(".py").split("/")[-1]
@@ -142,7 +143,6 @@ def process_file(df:pl.DataFrame):
 
     return agg_df
 
-
 @dag(
         dag_id=dag_name,
         schedule= None,
@@ -167,6 +167,39 @@ def dag_taskflow():
             bucket_name = sink_bucket,
             replace = True)
 
+    @task()
+    def run_trino(sql:str):
+        hook = TrinoHook(trino_conn_id = "trino_conn")
+        hook.run(sql, autocommit=True)
+
+
     process_task = process()
+    create_schema = run_trino.override(task_id = "create_schema")(
+        sql="""
+            create schema if not exists bronze.prueba
+            with (location = 's3a://bck-bronce/');
+            """
+    )
+    
+    create_table = run_trino.override(task_id = "create_tbl_data")(
+            sql="""
+                CREATE TABLE if not exists bronze.prueba.tbl_data (
+                  name VARCHAR,
+                  paid_amount double,
+                  pending_payment_amount double,
+                  pre_authorized_amount double,
+                  refunded_amount double,
+                  charged_back_amount double,
+                  created_at DATE
+                )
+                WITH (
+                  format = 'PARQUET',
+                  external_location = 's3a://bck-bronce/master/'
+                );
+                """
+        )
+
+    process_task.set_downstream(create_schema)
+    create_schema.set_downstream(create_table)
 
 dag_taskflow()
